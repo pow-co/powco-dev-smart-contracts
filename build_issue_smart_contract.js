@@ -5,6 +5,8 @@ import scrypt from 'scryptlib'
 
 import { readFileSync } from 'fs'
 
+import bsv from 'bsv'
+
 const { buildContractClass, ContractArtificat } = scrypt
 
 export function loadArtifact(fileName) {
@@ -57,7 +59,28 @@ async function start() {
     }
   })
 
+  const utxos = await fetchUtxos();
+
+  const satoshis = 1000
+
+  const unsignedDeployTx = new bsv.Transaction()
+    .from(utxos)
+    .addOutput(new bsv.Transaction.Output({
+      script: issue.lockingScript,
+      satoshis
+    }));
+
+  console.log({ unsignedDeployTx }) 
+
+  console.log(unsignedDeployTx.serialize())
+
+}
+
+async function fetchUtxos() {
+  return []
 }
 
 start()
+
+
 

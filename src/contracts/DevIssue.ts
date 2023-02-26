@@ -5,12 +5,20 @@ import {
     hash256,
     assert,
     ByteString,
-    SigHash
+    SigHash,
+    PubKey
 } from 'scrypt-ts'
 
 export class DevIssue extends SmartContract {
+
     @prop(true)
-    count: bigint
+    closed: boolean;
+
+    @prop()
+    version: ByteString;
+
+    @prop()
+    platform: ByteString;
  
     @prop()
     org: ByteString;
@@ -19,7 +27,7 @@ export class DevIssue extends SmartContract {
     repo: ByteString;
 
     @prop()
-    issue_number: bigint;
+    issue_number: ByteString;
 
     @prop()
     title: ByteString;
@@ -28,26 +36,39 @@ export class DevIssue extends SmartContract {
     description: ByteString;
 
     constructor(
-      count: bigint,
+      version: ByteString,
+      platform: ByteString,
       org: ByteString,
       repo: ByteString,
-      issue_number: bigint,
+      issue_number: ByteString,
       title: ByteString,
-      description: ByteString
+      description: ByteString,
     ) {
-        super(count, org, repo, issue_number, title, description)
-        this.count = count
+        super(version, platform, org, repo, issue_number, title, description)
+        this.version = version
+        this.platform = platform
         this.org = org
         this.repo = repo
         this.issue_number = issue_number
         this.title = title
         this.description = description
+        this.closed = false
     }
 
     @method(SigHash.ANYONECANPAY_SINGLE)
-    public increment() {
-        this.count++
+    public closeIssue() {
+        this.closed = true
+        // make sure balance in the contract does not change
+        const amount: bigint = this.ctx.utxo.value
+        // output containing the latest state
+        const output: ByteString = this.buildStateOutput(amount)
+        // verify current tx has this single output
+        assert(this.ctx.hashOutputs === hash256(output), 'hashOutputs mismatch')
+    }
 
+    @method(SigHash.ANYONECANPAY_SINGLE)
+    public reopenIssue() {
+        this.closed = false
         // make sure balance in the contract does not change
         const amount: bigint = this.ctx.utxo.value
         // output containing the latest state
